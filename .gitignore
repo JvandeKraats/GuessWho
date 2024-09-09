@@ -1,0 +1,3 @@
+**/appsettings.dev.json
+/FetchInfo/obj/**
+/FetchInfo/bin/**
