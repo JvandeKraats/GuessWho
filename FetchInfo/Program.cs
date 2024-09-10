@@ -7,26 +7,39 @@ var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.dev.json", optional: true)
     .Build();
 
-var scopes = new[] { "https://graph.microsoft.com/.default" };
-var tenantId = configuration["AzureStuff:TenantId"];
-var clientId = configuration["AzureStuff:ClientId"];
-var clientSecret = configuration["AzureStuff:ClientSecret"];
-var authority = $"https://login.microsoftonline.com/{tenantId}";
-var clientObjectId = configuration["AzureStuff:ClientObjectId"];
-
 // access token copied from graph explorer
-var accessToken = configuration["AzureStuff:TemporaryAccessToken"];
+var accessToken = configuration["AzureStuff:TemporaryAccessToken"] ??
+                  throw new InvalidOperationException("No access token found");
 
-var customAuthProvider = new CustomAuthProvider(accessToken);
-var client = new GraphServiceClient(customAuthProvider);
-var users = await client.Users.GetAsync((requestConfig) =>
+var graphUsers = await Fetcher.FetchUsersAsync(accessToken);
+var usersWithPicture = new List<User>();
+
+foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null))
 {
-    requestConfig.Headers.Add("ConsistencyLevel", "eventual");
-    requestConfig.QueryParameters.Filter = "mail ne null";
-    requestConfig.QueryParameters.Count = true;
-});
+    Console.WriteLine(user.DisplayName);
 
-users.Value.ForEach(u => Console.WriteLine(u.DisplayName));
+    try
+    {
+        var client = GraphServiceClientFactory.Construct(accessToken);
+        var photoStream = await client.Users[user.Id].Photo.Content.GetAsync();
+        using (var memoryStream = new MemoryStream())
+        {
+            await photoStream.CopyToAsync(memoryStream);
+            var photoBytes = memoryStream.ToArray();
+            // Save or process the photoBytes as needed
+            Console.WriteLine($"Fetched photo for {user.DisplayName}");
+            usersWithPicture.Add(new User(user.Id!, user.DisplayName!, $"./Photos/{user.Id}.jpg"));
+        }
+    }
+    catch (ServiceException ex)
+    {
+        Console.WriteLine($"Could not fetch photo for {user.DisplayName}: {ex.Message}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Could not fetch photo for {user.DisplayName}: {ex.Message}");
+    }
+}
 
 Console.ReadLine();
 

@@ -31,4 +31,8 @@
     <PackageReference Include="Microsoft.Identity.Web.TokenCache" Version="3.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Photos\" />
+  </ItemGroup>
+
 </Project>
