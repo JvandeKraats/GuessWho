@@ -33,15 +33,7 @@ foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null
         }
 
         await ImageSaver.SaveImageAsync(photoStream, $"{user.Id}.jpg");
-
-        // using (var memoryStream = new MemoryStream())
-        // {
-        //     await photoStream.CopyToAsync(memoryStream);
-        //     var photoBytes = memoryStream.ToArray();
-        //     // Save or process the photoBytes as needed
-        //     Console.WriteLine($"Fetched photo for {user.DisplayName}");
-        //     usersWithPicture.Add(new User(user.Id!, user.DisplayName!, $"./Photos/{user.Id}.jpg"));
-        // }
+        
     }
     catch (ServiceException ex)
     {
