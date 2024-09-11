@@ -1,6 +1,7 @@
 ﻿using FetchInfo;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
+using User = FetchInfo.User;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -20,29 +21,36 @@ foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null
 
     try
     {
+        var photosFolderPath = Path.Combine(AppContext.BaseDirectory, "Photos");
+        Directory.CreateDirectory(photosFolderPath);
+        
         var client = GraphServiceClientFactory.Construct(accessToken);
         var photoStream = await client.Users[user.Id].Photo.Content.GetAsync();
-        using (var memoryStream = new MemoryStream())
+        if (photoStream is null)
         {
-            await photoStream.CopyToAsync(memoryStream);
-            var photoBytes = memoryStream.ToArray();
-            // Save or process the photoBytes as needed
-            Console.WriteLine($"Fetched photo for {user.DisplayName}");
-            usersWithPicture.Add(new User(user.Id!, user.DisplayName!, $"./Photos/{user.Id}.jpg"));
+            Console.WriteLine($"No photo found for {user.DisplayName}");
+            continue;
         }
+
+        await ImageSaver.SaveImageAsync(photoStream, $"{user.Id}.jpg");
+
+        // using (var memoryStream = new MemoryStream())
+        // {
+        //     await photoStream.CopyToAsync(memoryStream);
+        //     var photoBytes = memoryStream.ToArray();
+        //     // Save or process the photoBytes as needed
+        //     Console.WriteLine($"Fetched photo for {user.DisplayName}");
+        //     usersWithPicture.Add(new User(user.Id!, user.DisplayName!, $"./Photos/{user.Id}.jpg"));
+        // }
     }
     catch (ServiceException ex)
     {
         Console.WriteLine($"Could not fetch photo for {user.DisplayName}: {ex.Message}");
     }
-    catch (Exception ex)
+    catch (Microsoft.Graph.Models.ODataErrors.ODataError ex) when (ex.Message.Contains("ImageNotFoundException"))
     {
-        Console.WriteLine($"Could not fetch photo for {user.DisplayName}: {ex.Message}");
+        Console.WriteLine($"No photo found for {user.DisplayName}");
     }
 }
 
 Console.ReadLine();
-
-
-//Get photo of a single user: https://graph.microsoft.com/v1.0/users/andre.geuze@xebia.com/photo/$value
-//Get photo of all users: https://graph.microsoft.com/v1.0/users?$select=id,displayName,photo
