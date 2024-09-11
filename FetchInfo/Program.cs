@@ -14,6 +14,8 @@ var accessToken = configuration["AzureStuff:TemporaryAccessToken"] ??
 
 var graphUsers = await Fetcher.FetchUsersAsync(accessToken);
 var usersWithPicture = new List<User>();
+var photosFolderPath = Path.Combine(AppContext.BaseDirectory, "Photos");
+Directory.CreateDirectory(photosFolderPath);
 
 foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null))
 {
@@ -21,9 +23,6 @@ foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null
 
     try
     {
-        var photosFolderPath = Path.Combine(AppContext.BaseDirectory, "Photos");
-        Directory.CreateDirectory(photosFolderPath);
-        
         var client = GraphServiceClientFactory.Construct(accessToken);
         var photoStream = await client.Users[user.Id].Photo.Content.GetAsync();
         if (photoStream is null)
@@ -32,8 +31,8 @@ foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null
             continue;
         }
 
-        await ImageSaver.SaveImageAsync(photoStream, $"{user.Id}.jpg");
-        
+        var photoPath = await ImageManager.SaveImageAsync(photoStream, $"{user.Id}.jpg");
+        usersWithPicture.Add(new User(user.Id!, user.DisplayName!, photoPath));
     }
     catch (ServiceException ex)
     {
@@ -44,5 +43,9 @@ foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null
         Console.WriteLine($"No photo found for {user.DisplayName}");
     }
 }
+
+ISaveUsers saveUsers = new SaveUsersToJsonFile();
+await saveUsers.Save(usersWithPicture);
+Console.WriteLine("Users saved");
 
 Console.ReadLine();

@@ -1,8 +1,8 @@
 ﻿namespace FetchInfo;
 
-public class ImageSaver
+public static class ImageManager
 {
-    public static async Task SaveImageAsync(Stream imageStream, string fileName)
+    public static async Task<string> SaveImageAsync(Stream imageStream, string fileName)
     {
         // Ensure the 'photos' directory exists
         var photosDirectory = Path.Combine(Directory.GetCurrentDirectory(), "photos");
@@ -14,11 +14,12 @@ public class ImageSaver
         if(File.Exists(filePath))
         {
             Console.WriteLine($"File {fileName} already exists");
-            return;
+            return filePath;
         }
         
         // Save the image stream to the specified file
         await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
         await imageStream.CopyToAsync(fileStream);
+        return filePath;
     }
 }
