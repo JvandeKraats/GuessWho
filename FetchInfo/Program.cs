@@ -3,13 +3,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
 using User = FetchInfo.User;
 
+
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .AddJsonFile("appsettings.dev.json", optional: true)
     .Build();
 
 // access token copied from graph explorer
-var accessToken = configuration["AzureStuff:TemporaryAccessToken"] ??
+var accessToken = configuration["GraphAPI:AccessToken"] ??
                   throw new InvalidOperationException("No access token found");
 
 var graphUsers = await Fetcher.FetchUsersAsync(accessToken);
@@ -31,7 +32,8 @@ foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null
             continue;
         }
 
-        var photoPath = await ImageManager.SaveImageAsync(photoStream, $"{user.Id}.jpg");
+        var photoPath = await ImageManager.SaveImageOnDiskAsync(photoStream, $"{user.Id}.jpg");
+        await ImageManager.SaveImageToBlobStorageAsync(configuration, photoPath);
         usersWithPicture.Add(new User(user.Id!, user.DisplayName!, photoPath));
     }
     catch (ServiceException ex)
