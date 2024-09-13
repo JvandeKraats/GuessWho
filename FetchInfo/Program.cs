@@ -46,8 +46,10 @@ foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null
     }
 }
 
-ISaveUsers saveUsers = new SaveUsersToJsonFile();
-await saveUsers.Save(usersWithPicture);
-Console.WriteLine("Users saved");
+var saveUsers = new SaveUsers();
+var filePath = saveUsers.SaveToJsonFile(usersWithPicture);
+await saveUsers.SaveJsonFileToBlobStorage(configuration, filePath);
+
+Console.WriteLine("Users successfully saved locally and uploaded to blob storage.");
 
 Console.ReadLine();
