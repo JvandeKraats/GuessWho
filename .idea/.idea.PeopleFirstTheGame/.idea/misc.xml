@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="com.microsoft.azure.toolkit.intellij.storage.azurite.settings.AzuriteSettings">
-    <option name="executablePath" value="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/IDE/Extensions/Microsoft/Azure Storage Emulator/azurite.exe" />
-  </component>
-</project>
