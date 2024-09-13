@@ -2,7 +2,7 @@
 
 public class User
 {
-    public User(string id, string name, string photoPath)
+    public User(string id, string name)
     {
         if(Guid.TryParse(id, out var guid))
         {
@@ -14,10 +14,8 @@ public class User
         }
         
         Name = name;
-        PhotoPath = photoPath;
     }
     
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string PhotoPath { get; set; } = string.Empty;
 }

@@ -16,7 +16,7 @@ public class SaveUsers
         return filePath;
     }
     
-    public async Task SaveJsonFileToBlobStorage(IConfigurationRoot configuration, string filePath)
+    public async Task SaveUsersDataToCosmos(IConfiguration configuration, string filePath)
     {
         var blobEndpoint = configuration["StorageAccount:BlobServiceEndpoint"];
         var tenantId = configuration["AzureAd:TenantId"];

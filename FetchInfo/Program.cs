@@ -1,55 +1,29 @@
-﻿using FetchInfo;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Graph;
-using User = FetchInfo.User;
+﻿using Azure.Identity;
+using Azure.Storage.Blobs;
+using FetchInfo;
 
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddHostedService<Worker>();
+builder.Services.AddTransient<ImageManager>();
 
-var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .AddJsonFile("appsettings.dev.json", optional: true)
-    .Build();
-
-// access token copied from graph explorer
-var accessToken = configuration["GraphAPI:AccessToken"] ??
-                  throw new InvalidOperationException("No access token found");
-
-var graphUsers = await Fetcher.FetchUsersAsync(accessToken);
-var usersWithPicture = new List<User>();
-var photosFolderPath = Path.Combine(AppContext.BaseDirectory, "Photos");
-Directory.CreateDirectory(photosFolderPath);
-
-foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null))
+if (builder.Environment.IsDevelopment())
 {
-    Console.WriteLine(user.DisplayName);
-
-    try
+    builder.Services.AddSingleton<BlobServiceClient>((provider)
+        => new BlobServiceClient("UseDevelopmentStorage=true"));
+}
+else
+{
+    builder.Services.AddSingleton<BlobServiceClient>((provider)
+        =>
     {
-        var client = GraphServiceClientFactory.Construct(accessToken);
-        var photoStream = await client.Users[user.Id].Photo.Content.GetAsync();
-        if (photoStream is null)
-        {
-            Console.WriteLine($"No photo found for {user.DisplayName}");
-            continue;
-        }
-
-        var photoPath = await ImageManager.SaveImageOnDiskAsync(photoStream, $"{user.Id}.jpg");
-        await ImageManager.SaveImageToBlobStorageAsync(configuration, photoPath);
-        usersWithPicture.Add(new User(user.Id!, user.DisplayName!, photoPath));
-    }
-    catch (ServiceException ex)
-    {
-        Console.WriteLine($"Could not fetch photo for {user.DisplayName}: {ex.Message}");
-    }
-    catch (Microsoft.Graph.Models.ODataErrors.ODataError ex) when (ex.Message.Contains("ImageNotFoundException"))
-    {
-        Console.WriteLine($"No photo found for {user.DisplayName}");
-    }
+        var endpoint = provider.GetRequiredService<IConfiguration>()["StorageAccount:BlobServiceEndpoint"];
+        return new BlobServiceClient(
+            new Uri(endpoint),
+            new DefaultAzureCredential());
+    });
 }
 
-var saveUsers = new SaveUsers();
-var filePath = saveUsers.SaveToJsonFile(usersWithPicture);
-await saveUsers.SaveJsonFileToBlobStorage(configuration, filePath);
+var host = builder.Build();
 
-Console.WriteLine("Users successfully saved locally and uploaded to blob storage.");
-
-Console.ReadLine();
+var tesrt = builder.Environment;
+host.Run();

@@ -1,40 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-    <TargetFrameworkVersion>9.0.0-preview.7</TargetFrameworkVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UserSecretsId>1deaecb3-b74c-4056-a4c3-3b4264409e94</UserSecretsId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="appsettings.dev.json" />
-    <None Remove="appsettings.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="appsettings.dev.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.12.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.21.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Graph" Version="5.56.0" />
-    <PackageReference Include="Microsoft.Graph.Core" Version="3.1.14" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="4.62.0" />
+    <PackageReference Include="Microsoft.Graph" Version="5.58.0" />
+    <PackageReference Include="Microsoft.Graph.Core" Version="3.1.21" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.64.1" />
     <PackageReference Include="Microsoft.Identity.Web.TokenCache" Version="3.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Photos\" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0-rc.1.24431.7" />
   </ItemGroup>
 
 </Project>
