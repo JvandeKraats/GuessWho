@@ -1,9 +1,12 @@
-﻿using FetchInfo;
+﻿using Azure.Storage.Blobs;
+using FetchInfo;
 using Microsoft.Graph;
+using Microsoft.Graph.Models.ODataErrors;
 using InvalidOperationException = System.InvalidOperationException;
 using User = FetchInfo.User;
 
-public class Worker(IConfiguration configuration, ImageManager imageManager) : BackgroundService
+public class Worker(IConfiguration configuration, ImageManager imageManager, BlobServiceClient blobServiceClient, SaveUsers saveUsers)
+    : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -13,6 +16,8 @@ public class Worker(IConfiguration configuration, ImageManager imageManager) : B
 
         var graphUsers = await Fetcher.FetchUsersAsync(accessToken);
         var usersWithPicture = new List<User>();
+
+        await MakeSureContainersExistAsync();
 
         foreach (var user in graphUsers.Where(u => u.Id != null && u.DisplayName != null))
         {
@@ -34,25 +39,31 @@ public class Worker(IConfiguration configuration, ImageManager imageManager) : B
                 }
 
                 await imageManager.SaveImageToBlobStorageAsync(photoStream, $"{user.Id}.{fileExtension}");
-                usersWithPicture.Add(new User(user.Id!, user.DisplayName!));
+                usersWithPicture.Add(new User{Id = user.Id!, Name = user.DisplayName!});
             }
             catch (ServiceException ex)
             {
                 Console.WriteLine($"Could not fetch photo for {user.DisplayName}: {ex.Message}");
             }
-            catch (Microsoft.Graph.Models.ODataErrors.ODataError ex) when (ex.Message.Contains("ImageNotFoundException"))
+            catch (ODataError ex) when (ex.Message.Contains("ImageNotFoundException"))
             {
                 Console.WriteLine($"No photo found for {user.DisplayName}");
             }
         }
 
-        var saveUsers = new SaveUsers();
-        var filePath = saveUsers.SaveToJsonFile(usersWithPicture);
-        await saveUsers.SaveUsersDataToCosmos(configuration, filePath);
-
-        Console.WriteLine("Users successfully saved locally and uploaded to blob storage.");
-
+        await saveUsers.SaveUsersDataToCosmosAsync(usersWithPicture);
+        
+        Console.WriteLine("Users' pictures uploaded to blob storage and users.json file uploaded to cosmos db.");
         Console.ReadLine();
+    }
+
+    private async Task MakeSureContainersExistAsync()
+    {
+        var photosBlobContainerClient = blobServiceClient.GetBlobContainerClient("photos");
+        var usersBlobContainerClient = blobServiceClient.GetBlobContainerClient("users");
+
+        await photosBlobContainerClient.CreateIfNotExistsAsync();
+        await usersBlobContainerClient.CreateIfNotExistsAsync();
     }
 
     private static string ConvertMimetypeToFileExtension(string? mimeType)
@@ -66,5 +77,3 @@ public class Worker(IConfiguration configuration, ImageManager imageManager) : B
         };
     }
 }
-
-
