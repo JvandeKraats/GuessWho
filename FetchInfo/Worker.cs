@@ -51,7 +51,7 @@ public class Worker(IConfiguration configuration, ImageManager imageManager, Blo
             }
         }
 
-        await saveUsers.SaveUsersDataToCosmosAsync(usersWithPicture);
+        await saveUsers.SaveUsersToBlobStorageAsync(usersWithPicture);
         
         Console.WriteLine("Users' pictures uploaded to blob storage and users.json file uploaded to cosmos db.");
         Console.ReadLine();

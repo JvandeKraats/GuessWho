@@ -1,25 +1,25 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using System.Text.Json;
+using Azure.Storage.Blobs;
 
 namespace FetchInfo;
 
-public class SaveUsers(CosmosClient client)
+public class SaveUsers(BlobServiceClient blobServiceClient)
 {
-    public async Task SaveUsersDataToCosmosAsync(List<User> users)
+    public async Task SaveUsersToBlobStorageAsync(List<User> users)
     {
-        try
+        var containerClient = blobServiceClient.GetBlobContainerClient("users");
+        
+        // Convert user list to users.json file
+        var options = new JsonSerializerOptions
         {
-            var dbResponse = await client.CreateDatabaseIfNotExistsAsync("GuessWho-ColleagueData");
-            var containerResponse = await dbResponse.Database.CreateContainerIfNotExistsAsync("Users", "/id");
-            var container = containerResponse.Container;
-            
-            foreach (var user in users.Select(u => new { id = u.Id, name = u.Name }))
-            {
-                await container.CreateItemAsync(user);
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Error: {e.Message}");
-        }
+            WriteIndented = true
+        };
+        var jsonString = JsonSerializer.Serialize(users, options);
+        // Convert JSON string to stream
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonString));
+
+        // Upload the JSON file to Blob Storage
+        var blobClient = containerClient.GetBlobClient("users.json");
+        await blobClient.UploadAsync(stream, true);
     }
 }
